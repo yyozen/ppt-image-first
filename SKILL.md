@@ -54,6 +54,7 @@ Read `references/workflow.md` for stage-by-stage execution details.
 - Do not write `slide_blueprint.md` before style direction and `风格反演确认` are complete.
 - Keep generation image-first when the confirmed direction depends on generated page visuals; do not silently fall back to shape-by-shape PPT construction or hand-drawn code substitutes.
 - Treat generated page visuals as complete by default; post-generation overlays default to zero unless they are traceable to approved blueprint fields.
+- Keep slide identifiers, candidate codes, filenames, and generation batch labels outside the image-generation prompt body. They may appear in planning files, filenames, mapping tables, review UI, and chat instructions, but the prompt sent to the image model should contain only audience-facing content and visual direction.
 - Before full generation, ask whether the user wants one final image per slide or multiple final candidates per slide.
 - Do not export the final PPT immediately after first-pass generation; export only after the reviewed pages are approved.
 

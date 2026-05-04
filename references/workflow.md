@@ -275,6 +275,13 @@ Every slide prompt must inherit that anchor first, then add only page-role and c
 Do not write slide prompts as independent style descriptions.
 If one slide would naturally become darker, brighter, flatter, glossier, or more atmospheric than the rest, explicitly test that change against the allowed variation range before keeping it.
 
+Prompt assembly metadata isolation:
+- maintain slide IDs, candidate codes, filenames, and generation batch labels in a separate mapping table or local variables
+- do not concatenate those identifiers into the text prompt sent to the image model
+- do not format per-slide prompt bodies with production headers; use a separate executor-side label for logs and filenames
+- the prompt body should contain only the approved audience-facing slide content, page role, visual direction, continuity anchor, layout intent, and any visible labels that should actually appear in the slide
+- after generation, reconnect outputs to slide IDs through filenames or the external mapping table, not through text embedded in the image prompt
+
 ### Confirmation point 4 — 初稿评审与返修
 Do not jump directly from first-pass page generation to final delivery.
 After the first full set of page visuals exists, enter a dedicated review-and-retouch loop.

@@ -46,6 +46,7 @@ For each slide, include:
 - Do not write empty phrases such as `keep the style consistent`. State the inherited constraints concretely.
 - Any editable overlay that may appear in final assembly must be traceable to explicit fields in this slide entry rather than invented during generation.
 - If no such overlay need is explicitly described here, the default assembly behavior is zero post-generation overlays.
+- `slide_id` is for planning, filenames, and page mapping only. It should not be copied into the image-generation prompt body.
 - If `content_report.md` exists, the slide list should trace back to it rather than inventing a separate generic deck outline.
 - It should not contain exact color values, prompt strings, or pixel-level layout instructions.
 - It should be lighter than a full design draft, but stronger than a plain outline.

@@ -52,6 +52,10 @@ This file records only the constraints that generation must not drift away from.
 - do not upgrade unconfirmed one-off preview details into deck-wide constraints
 - do not invent unsupported precise statistics, experiment results, citations, rankings, or institutional conclusions
 
+### generation_metadata
+- slide identifiers, candidate codes, filenames, and batch labels stay outside image prompt bodies
+- reconnect generated images to slide IDs through filenames or an external mapping table
+
 ## Recommended lock style for continuity anchor
 
 Keep the continuity anchor compressed and machine-oriented.
@@ -81,6 +85,7 @@ Example:
 - Do not explain the rationale here.
 - Do not duplicate long narrative content from `design_spec.md`.
 - Unless explicitly approved and mapped to blueprint fields, the default post-generation overlay count is zero.
+- Keep execution metadata outside image prompt bodies rather than handling it through negative prompt instructions.
 - Only put what must stay fixed during execution.
 - If a reverse-engineered feature was not confirmed as deck-wide, keep it out of this file or scope it explicitly to the pages that need it.
 - If `content_report.md` exists, this file should lock which claim types are safe to use and which must stay generalized or await confirmation.
