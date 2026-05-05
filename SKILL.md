@@ -55,6 +55,7 @@ Read `references/workflow.md` for stage-by-stage execution details.
 - Keep generation image-first when the confirmed direction depends on generated page visuals; do not silently fall back to shape-by-shape PPT construction or hand-drawn code substitutes.
 - Treat generated page visuals as complete by default; post-generation overlays default to zero unless they are traceable to approved blueprint fields.
 - Keep slide identifiers, candidate codes, filenames, and generation batch labels outside the image-generation prompt body. They may appear in planning files, filenames, mapping tables, review UI, and chat instructions, but the prompt sent to the image model should contain only audience-facing content and visual direction.
+- Review payloads should carry lightweight coordinate markup, not base64 preview images. When a user pastes review JSON with markup, first render the marked review images locally with `scripts/render_review_markup.py`, then use the marked images plus separate text comments as the retouch/regeneration reference.
 - Before full generation, ask whether the user wants one final image per slide or multiple final candidates per slide.
 - Do not export the final PPT immediately after first-pass generation; export only after the reviewed pages are approved.
 

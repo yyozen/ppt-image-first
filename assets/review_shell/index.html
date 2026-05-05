@@ -648,7 +648,7 @@
       <div class="panel action-panel">
         <div class="panel-head">
           <h2 class="panel-title">本页动作与说明</h2>
-          <p class="panel-subtitle">这里的内容会和图上标注一起进入提交 payload。</p>
+          <p class="panel-subtitle">这里的内容会和图上标注坐标一起进入提交 payload，图片由 agent 本地还原。</p>
         </div>
         <div class="panel-body">
           <div class="action-scroll">
@@ -824,6 +824,12 @@
       actionPanel.style.height = `${stageHeight}px`;
     }
 
+    function syncStageImageAspectRatio() {
+      if (!stageImage.naturalWidth || !stageImage.naturalHeight) return false;
+      stageFrame.style.aspectRatio = `${stageImage.naturalWidth} / ${stageImage.naturalHeight}`;
+      return true;
+    }
+
     function resizeCanvas() {
       const rect = stageFrame.getBoundingClientRect();
       const ratio = window.devicePixelRatio || 1;
@@ -927,6 +933,9 @@
       stageSubtitle.textContent = `${slide.role} · 在图上直接圈、框、加注释点，然后写本页总评。`;
       stageImage.src = slide.image;
       stageImage.alt = slide.title;
+      if (stageImage.complete) {
+        syncStageImageAspectRatio();
+      }
       requestedActionSelect.value = pageState.requested_action;
       pageCommentInput.value = pageState.page_comment;
       renderNoteList();
@@ -1054,84 +1063,57 @@
         .replaceAll("'", '&#39;');
     }
 
-    function getStageDisplaySize() {
-      const rect = stageFrame.getBoundingClientRect();
+    function roundCoordinate(value) {
+      return Number(Math.min(Math.max(value, 0), 1).toFixed(4));
+    }
+
+    function roundStrokeWidth(value) {
+      return Number(Math.max(Number(value) || 0, 0).toFixed(2));
+    }
+
+    function simplifyPoints(points, maxPoints = 120) {
+      if (!points.length) return [];
+      const source = points.length <= maxPoints
+        ? points
+        : Array.from({ length: maxPoints }, (_, index) => {
+            const sourceIndex = Math.round(index * (points.length - 1) / (maxPoints - 1));
+            return points[sourceIndex];
+          });
+      const rounded = source.map(point => ({
+        x: roundCoordinate(point.x),
+        y: roundCoordinate(point.y)
+      }));
+      return rounded.filter((point, index) => {
+        if (index === 0) return true;
+        const prev = rounded[index - 1];
+        return point.x !== prev.x || point.y !== prev.y;
+      });
+    }
+
+    function buildMarkupPayload(pageState) {
       return {
-        width: rect.width || stageCanvas.clientWidth || 1600,
-        height: rect.height || stageCanvas.clientHeight || 900
+        coordinate_space: 'normalized_0_1',
+        render_instruction: 'Agent should render this markup onto the local source slide image before retouch/regeneration.',
+        notes: pageState.notes.map((note, index) => ({
+          marker: getNoteMarker(index),
+          x: roundCoordinate(note.x),
+          y: roundCoordinate(note.y),
+          comment: note.text
+        })),
+        rects: pageState.rects.map(item => ({
+          x: roundCoordinate(item.x),
+          y: roundCoordinate(item.y),
+          w: roundCoordinate(item.w),
+          h: roundCoordinate(item.h),
+          color: item.color,
+          width: roundStrokeWidth(item.width)
+        })),
+        pen_strokes: pageState.penStrokes.map(stroke => ({
+          color: stroke.color,
+          width: roundStrokeWidth(stroke.width),
+          points: simplifyPoints(stroke.points)
+        })).filter(stroke => stroke.points.length > 1)
       };
-    }
-
-    function loadImageForExport(src) {
-      return new Promise((resolve, reject) => {
-        const img = new Image();
-        if (!src.startsWith('data:') && !src.startsWith('file:')) {
-          img.crossOrigin = 'anonymous';
-        }
-        img.onload = () => resolve(img);
-        img.onerror = () => reject(new Error('图片加载失败，无法生成标注预览图。'));
-        img.src = src;
-        if (img.complete && img.naturalWidth) {
-          resolve(img);
-        }
-      });
-    }
-
-    async function buildAnnotatedPreview(slide, pageState) {
-      const img = await loadImageForExport(slide.image);
-      const canvas = document.createElement('canvas');
-      canvas.width = img.naturalWidth || 1600;
-      canvas.height = img.naturalHeight || 900;
-      const out = canvas.getContext('2d');
-      const stageSize = getStageDisplaySize();
-      const widthScale = canvas.width / stageSize.width;
-      const noteScale = Math.max(widthScale, 1);
-      out.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-      pageState.penStrokes.forEach(stroke => {
-        if (!stroke.points.length) return;
-        out.beginPath();
-        out.lineCap = 'round';
-        out.lineJoin = 'round';
-        out.strokeStyle = stroke.color;
-        out.lineWidth = stroke.width * widthScale;
-        stroke.points.forEach((point, index) => {
-          const x = point.x * canvas.width;
-          const y = point.y * canvas.height;
-          if (index === 0) out.moveTo(x, y);
-          else out.lineTo(x, y);
-        });
-        out.stroke();
-      });
-
-      pageState.rects.forEach(item => {
-        out.beginPath();
-        out.strokeStyle = item.color;
-        out.lineWidth = item.width * widthScale;
-        out.setLineDash([20 * widthScale, 16 * widthScale]);
-        out.strokeRect(item.x * canvas.width, item.y * canvas.height, item.w * canvas.width, item.h * canvas.height);
-        out.setLineDash([]);
-      });
-
-      pageState.notes.forEach((note, index) => {
-        const x = note.x * canvas.width;
-        const y = note.y * canvas.height;
-        out.fillStyle = 'rgba(188, 91, 40, 0.96)';
-        out.beginPath();
-        out.arc(x, y, 20 * noteScale, 0, Math.PI * 2);
-        out.fill();
-        out.fillStyle = '#fff';
-        out.font = `700 ${22 * noteScale}px "Segoe UI Symbol", "Segoe UI", Arial, sans-serif`;
-        out.textAlign = 'center';
-        out.textBaseline = 'middle';
-        out.fillText(getNoteMarker(index), x, y + noteScale);
-      });
-
-      try {
-        return canvas.toDataURL('image/png');
-      } catch (error) {
-        throw new Error(`标注预览图导出失败：${error.message || error}`);
-      }
     }
 
     async function buildPayload(mode) {
@@ -1165,14 +1147,16 @@
         };
 
         if (hasVisualMarkup) {
-          pagePayload.annotated_preview_data_url = await buildAnnotatedPreview(slide, pageState);
+          pagePayload.markup = buildMarkupPayload(pageState);
         }
 
         pages.push(pagePayload);
       }
 
       return {
-        schema_version: 'review-shell-v1',
+        schema_version: 'review-shell-v2',
+        markup_transport: 'coordinates_only',
+        agent_instruction: 'Before retouching or regenerating pages, render each page.markup onto the corresponding local slide image with scripts/render_review_markup.py, then use the marked image plus separate textual comments as the edit reference.',
         submitted_at: new Date().toISOString(),
         mode,
         page_count: pages.length,
@@ -1267,6 +1251,10 @@
     });
 
     window.addEventListener('resize', resizeCanvas);
+    stageImage.addEventListener('load', () => {
+      syncStageImageAspectRatio();
+      resizeCanvas();
+    });
 
     renderPageList();
     renderStage();

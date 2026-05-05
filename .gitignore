@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 
 ~$*
+
+.manual_review_restore_test/
+review_marked/
+review_feedback.json

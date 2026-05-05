@@ -195,6 +195,7 @@ In that round:
 - prefer natural feedback, annotations, and marked regions over asking the user to describe everything in abstract terms
 - explicitly tell the user what the next two paths are: `满意就直接告诉我可以结束评审；不满意就点页面里的复制按钮，把复制出的 JSON 粘贴到对话输入框里再发送`
 - do not rely on vague phrasing like `paste the review data`; tell the user concretely to return to the chat box, paste into the input field, and send
+- when pasted review feedback contains coordinate markup, first restore local marked review images with `scripts/render_review_markup.py`; use those marked images plus separate text comments as the retouch reference
 
 When the user gives feedback, classify it internally before responding:
 - overall page dissatisfaction → regenerate the whole page

@@ -309,6 +309,16 @@ In the review HTML:
 - support per-page review comments
 - when the environment supports it, prefer visual annotations such as brush marks, boxes, arrows, or highlighted regions in addition to text comments
 - preserve enough context that the agent can understand both the page and the marked region together
+- copy lightweight `review-shell-v2` JSON with normalized coordinate markup for notes, rectangles, and pen strokes
+- do not include base64 images, data URLs, or full annotated preview images in the copied review JSON
+
+When the user pastes `review-shell-v2` feedback:
+- save the pasted JSON to a local file such as `review_feedback.json`
+- run `python scripts/render_review_markup.py review_feedback.json --images <generated-page-image-directory> --out <marked-review-directory>`
+- use the rendered marked images plus separate page comments and note comments as the reference for retouching or regenerating pages
+- do not bake textual comments into the marked image by default; pass text feedback separately alongside the marked image when calling the image edit/regeneration model
+- do not skip the local marked-image restoration step and rely only on raw coordinate text when visual markup is present
+- if source images cannot be found automatically, create an image-map JSON from page IDs to local image paths and rerun the same script with `--image-map`
 
 When the user gives review feedback, classify it before acting:
 - `full-page regeneration` → use when the user wants broader changes to composition, hierarchy, page concept, style intensity, or overall mood
