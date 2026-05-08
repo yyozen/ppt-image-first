@@ -241,7 +241,10 @@ That means:
 - do not skip image generation and directly assemble the final deck only from default PPT shapes, text boxes, layout primitives, custom-drawn vectors, SVG-like code, or programmatic page reconstruction unless the user explicitly asks for that approach
 - if the confirmed direction depends on generated page visuals, actually generate those visuals and use them in the final deck
 - do not hand-build substitute page art yourself with code just because it is easier or more controllable than calling the image-generation path
+- do not justify code overlays by saying they are more accurate, more controllable, safer for text, faster, or less likely to cause layout drift; those reasons are not valid grounds for bypassing the image-generation path
 - do not silently switch to textless or background-only generated images just to avoid rendering text problems
+- when a requested revision changes visible page content, including titles, labels, annotations, bottom cards, captions, metrics, explanatory text, or result summaries, handle it through image edit/regeneration by default
+- if image editing/regeneration is unavailable or unsuitable, stop and tell the user before using any deterministic overlay method
 - if you choose to keep PPT text editable while using generated visuals, that must still preserve the confirmed style direction and must not collapse into generic background art plus ordinary default slides
 - treat generated page visuals as complete outputs by default, not as underlays for a second design pass
 - post-generation overlays should default to zero
@@ -249,6 +252,7 @@ That means:
 - do not add self-authored editable copy just because the generated page looks sparse or because editable text feels safer
 - do not add explanatory boxes, correction notes, patch text, or rescue text to compensate for weak generation output; fix the generation path instead
 - when editable overlays are necessary, they should come from the approved slide content and should be used to realize the confirmed page, not to redesign it after the fact
+- PIL/Pillow may be used only for mechanical review markup rendering, format conversion, dimension checks, or packaging support; it must not create, replace, correct, or overlay audience-facing slide content in preview images, selected final images, reviewed pages, or final PPT visuals
 - if image generation quality, text rendering limits, or tooling constraints force a tradeoff, tell the user explicitly before changing generation strategy
 
 The final generation should remain faithful to the confirmed preview logic rather than drifting into a different production method.
@@ -316,6 +320,7 @@ When the user pastes `review-shell-v2` feedback:
 - save the pasted JSON to a local file such as `review_feedback.json`
 - run `python scripts/render_review_markup.py review_feedback.json --images <generated-page-image-directory> --out <marked-review-directory>`
 - use the rendered marked images plus separate page comments and note comments as the reference for retouching or regenerating pages
+- for review revisions, use the selected generated image plus user feedback as input to the image edit/regeneration model; do not patch the selected image directly with deterministic drawing code
 - do not bake textual comments into the marked image by default; pass text feedback separately alongside the marked image when calling the image edit/regeneration model
 - do not skip the local marked-image restoration step and rely only on raw coordinate text when visual markup is present
 - if source images cannot be found automatically, create an image-map JSON from page IDs to local image paths and rerun the same script with `--image-map`
